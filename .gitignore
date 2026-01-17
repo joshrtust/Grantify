@@ -12,6 +12,28 @@ dist
 dist-ssr
 *.local
 
+# Vite / React
+.vite
+vite.config.*.timestamp-*
+vite.config.*.temp-*
+coverage
+stats.html
+*.map
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Package manager files
+.pnp
+.pnp.*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.yarn/patches
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +44,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS / misc
+Thumbs.db
+*.pem
