@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, SafeAreaView } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import GrantCardStack from '@/components/GrantCardStack';
 import { Grant } from '@/components/SwipeableGrantCard';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import React from 'react';
+import { SafeAreaView, View } from 'react-native';
 
 // Sample grant data - replace with real data later
 const sampleGrants: Grant[] = [
