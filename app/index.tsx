@@ -69,7 +69,7 @@ const Index = () => {
         router.replace('/onboarding' as any);
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
-        router.replace('/(tabs)/home' as any);
+        router.replace('/(tabs)/search' as any);
       }
     } catch (error: any) {
       const errorCode = error?.code || '';

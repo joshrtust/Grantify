@@ -116,7 +116,7 @@ const Onboarding = () => {
       console.log('Onboarding completed and data saved with ID:', docRef.id);
       
       // Navigate to home
-      router.replace('/(tabs)/home' as any);
+      router.replace('/(tabs)/search' as any);
     } catch (error) {
       console.error('Error saving user data:', error);
       Alert.alert('Error', 'Failed to save your profile. Please try again.');
