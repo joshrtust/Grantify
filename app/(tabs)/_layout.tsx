@@ -25,44 +25,39 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
-        name="home"
+        name="my_grants"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'My Grants',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
-          tabBarIcon: ({ color }) => <IconSymbol size={32} name="magnifyingglass" color={color} />,
+          title: '',
+          tabBarIcon: ({ color }) => <IconSymbol size={32} name="house.fill" color={color} />,
           tabBarButton: (props) => (
             <View style={{ marginTop: -20, alignItems: 'center', justifyContent: 'center' }}>
               <HapticTab
                 {...props}
                 style={[
-                  props.style,
                   {
                     backgroundColor: '#6366f1',
                     borderRadius: 35,
                     width: 70,
                     height: 70,
-                    minWidth: 70,
-                    minHeight: 70,
-                    maxWidth: 70,
-                    maxHeight: 70,
                     justifyContent: 'center',
                     alignItems: 'center',
                     borderWidth: 4,
                     borderColor: '#ffffff',
-                    overflow: 'hidden',
+                    display: 'flex',
                   },
                 ]}
               />

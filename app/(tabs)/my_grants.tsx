@@ -36,7 +36,7 @@ const sampleGrants: Grant[] = [
   },
 ];
 
-export default function Home() {
+export default function MyGrants() {
   const handleSwipeLeft = (grant: Grant) => {
     // Store to logs - will be implemented later
     console.log('Swiped left (saved to logs):', grant);
