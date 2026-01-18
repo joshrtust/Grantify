@@ -1,5 +1,8 @@
+import { auth, db } from '@/FirebaseConfig';
+import { addDoc, collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   PanResponder,
   Pressable,
@@ -12,6 +15,14 @@ import {
 
 const SWIPE_THRESHOLD = 120;
 
+interface Grant {
+  id: string;
+  name: string;
+  Requirements: string[];
+  Value: string;
+  URL?: string;
+}
+
 export default function Search() {
   const { width, height } = useWindowDimensions();
 
@@ -22,6 +33,39 @@ export default function Search() {
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
   const [swipeColor, setSwipeColor] = useState<'none' | 'right' | 'left'>('none');
+  const [grants, setGrants] = useState<Grant[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const user = auth.currentUser;
+
+  // Fetch grants from Firestore
+  useEffect(() => {
+    const fetchGrants = async () => {
+      try {
+        const grantsSnapshot = await getDocs(collection(db, 'grants'));
+        const fetchedGrants: Grant[] = grantsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('Grant data:', doc.id, data);
+          const requirements = data.Requirements || data.requirements || [];
+          return {
+            id: doc.id,
+            name: data.name || data.Name || 'Unknown Grant',
+            Requirements: Array.isArray(requirements) ? requirements : [String(requirements)],
+            Value: data.Value || data.value || 'N/A',
+            URL: data.URL || data.url || '',
+          };
+        });
+        console.log('Fetched grants:', fetchedGrants);
+        setGrants(fetchedGrants);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching grants:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchGrants();
+  }, []);
 
   // Keyboard controls for web
   // left/right arrows to swipe, space/enter to flip
@@ -67,11 +111,26 @@ export default function Search() {
       toValue: { x: direction === 'right' ? width * 1.5 : -width * 1.5, y: 0 },
       duration: 300,
       useNativeDriver: false,
-    }).start(() => {
+    }).start(async () => {
+      // Save to applications collection if swiped right
+      if (direction === 'right' && user && grants[currentIndex]) {
+        try {
+          await addDoc(collection(db, 'applications'), {
+            UserID: user.uid,
+            GrantID: grants[currentIndex].id,
+          });
+          console.log('Grant saved to applications:', grants[currentIndex].name);
+        } catch (error) {
+          console.error('Error saving application:', error);
+        }
+      }
+
+      // Move to next card
       position.setValue({ x: 0, y: 0 });
       setSwipeColor('none');
       setFlipped(false);
       flipAnim.setValue(0);
+      setCurrentIndex(prev => prev + 1);
     });
   };
 
@@ -112,10 +171,34 @@ export default function Search() {
 
   const cardColor =
     swipeColor === 'right'
-      ? '#dcfce7' // green tint
+      ? '#1e3a2e' // subtle dark green
       : swipeColor === 'left'
-      ? '#fee2e2' // red tint
+      ? '#3a1e1e' // subtle dark red
       : '#1a1a1a'; // dark background
+
+  const currentGrant = grants[currentIndex];
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366f1" />
+          <Text style={styles.loadingText}>Loading grants...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!currentGrant) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.noMoreText}>🎉</Text>
+          <Text style={styles.loadingText}>No more grants to review!</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -147,13 +230,12 @@ export default function Search() {
                 },
               ]}
             >
-              <Text style={styles.universityText}>University of Toronto</Text>
+              <Text style={styles.universityText}>{currentGrant.name}</Text>
               <Text style={styles.questionText}>
-                Are you a member of the LGBTQ+ community?
+                {currentGrant.Requirements.length > 0 ? currentGrant.Requirements[0] : 'No requirements listed'}
               </Text>
               <View style={styles.bottomInfo}>
-                <Text style={styles.valueText}>$40k – $60k</Text>
-                <Text style={styles.deadlineText}>Valid until 25-12</Text>
+                <Text style={styles.valueText}>{currentGrant.Value}</Text>
               </View>
               <Text style={styles.tapHint}>Tap to flip</Text>
             </Animated.View>
@@ -177,23 +259,29 @@ export default function Search() {
               <View style={styles.detailsContainer}>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Value:</Text>
-                  <Text style={styles.detailValue}>$40k – $60k</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Deadline:</Text>
-                  <Text style={styles.detailValue}>December 25, 2026</Text>
+                  <Text style={styles.detailValue}>{currentGrant.Value}</Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Organization:</Text>
-                  <Text style={styles.detailValue}>University of Toronto</Text>
+                  <Text style={styles.detailValue}>{currentGrant.name}</Text>
                 </View>
+                {currentGrant.URL && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>URL:</Text>
+                    <Text style={[styles.detailValue, styles.urlText]} numberOfLines={1}>
+                      {currentGrant.URL}
+                    </Text>
+                  </View>
+                )}
                 <Text style={styles.requirementsTitle}>Requirements:</Text>
-                <Text style={styles.requirementsText}>
-                  • Must be a member of the LGBTQ+ community{'\n'}
-                  • Enrolled in an undergraduate program{'\n'}
-                  • Minimum GPA of 3.0{'\n'}
-                  • Canadian citizen or permanent resident
-                </Text>
+                <View style={styles.requirementsList}>
+                  {currentGrant.Requirements.map((requirement, index) => (
+                    <View key={index} style={styles.requirementItem}>
+                      <Text style={styles.bulletPoint}>•</Text>
+                      <Text style={styles.requirementsText}>{requirement}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             </Animated.View>
           </Pressable>
@@ -217,6 +305,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#9ca3af',
+    marginTop: 16,
+  },
+  noMoreText: {
+    fontSize: 64,
+    marginBottom: 16,
   },
   cardContainer: {
     flex: 1,
@@ -250,15 +352,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     userSelect: 'none',
+    flexShrink: 0,
   } as any,
   questionText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 32,
     flex: 1,
-    textAlignVertical: 'center',
+    flexWrap: 'wrap',
     userSelect: 'none',
   } as any,
   bottomInfo: {
@@ -269,7 +372,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#6366f1',
     textAlign: 'center',
-    marginBottom: 8,
     userSelect: 'none',
   } as any,
   deadlineText: {
@@ -304,6 +406,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'flex-start',
   },
   detailLabel: {
     fontSize: 16,
@@ -316,7 +419,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     userSelect: 'none',
+    flex: 1,
+    flexWrap: 'wrap',
+    textAlign: 'right',
   } as any,
+  urlText: {
+    fontSize: 14,
+    color: '#a5b4fc',
+    fontStyle: 'italic',
+  },
   requirementsTitle: {
     fontSize: 18,
     color: '#ffffff',
@@ -325,11 +436,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     userSelect: 'none',
   } as any,
+  requirementsList: {
+    marginTop: 8,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingRight: 8,
+    alignItems: 'flex-start',
+  },
+  bulletPoint: {
+    fontSize: 18,
+    color: '#e0e7ff',
+    marginRight: 12,
+    marginTop: 2,
+    userSelect: 'none',
+  } as any,
   requirementsText: {
     fontSize: 15,
     color: '#e0e7ff',
-    lineHeight: 24,
+    lineHeight: 22,
     userSelect: 'none',
+    flexWrap: 'wrap',
+    flex: 1,
   } as any,
   indicatorsContainer: {
     position: 'absolute',
