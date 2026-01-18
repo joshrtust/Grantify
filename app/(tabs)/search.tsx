@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Animated,
   PanResponder,
+  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -95,9 +96,14 @@ export default function Search() {
       }
     };
 
-    if (typeof window !== 'undefined') {
+    // Check if window.addEventListener exists and is a function (web only)
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
+      return () => {
+        if (typeof window.removeEventListener === 'function') {
+          window.removeEventListener('keydown', handleKeyDown);
+        }
+      };
     }
   }, [flipped]);
 
@@ -501,7 +507,7 @@ const styles = StyleSheet.create({
   } as any,
   indicatorsContainer: {
     position: 'absolute',
-    top: 40,
+    top: Platform.OS === 'web' ? 40 : 100,
     left: 0,
     right: 0,
     flexDirection: 'row',
