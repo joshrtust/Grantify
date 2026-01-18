@@ -1,6 +1,6 @@
 import { auth, db } from '@/FirebaseConfig';
 import { useRouter } from 'expo-router';
-import { addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -101,8 +101,8 @@ const Onboarding = () => {
         return;
       }
 
-      // Save user data to Firestore with auto-generated ID
-      const docRef = await addDoc(collection(db, 'users'), {
+      // Save user data to Firestore using the Auth UID as the document ID
+      await setDoc(doc(db, 'users', user.uid), {
         firstName: userData.firstName,
         lastName: userData.lastName,
         age: parseInt(userData.age),
@@ -113,7 +113,7 @@ const Onboarding = () => {
         createdAt: new Date().toLocaleDateString(),
       });
 
-      console.log('Onboarding completed and data saved with ID:', docRef.id);
+      console.log('Onboarding completed and data saved with UID:', user.uid);
       
       // Navigate to home
       router.replace('/(tabs)/search' as any);
