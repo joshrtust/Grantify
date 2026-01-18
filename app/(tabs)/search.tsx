@@ -1,89 +1,375 @@
-import React, { useState } from 'react';
-import { View, Text, SafeAreaView, TextInput, ScrollView, TouchableOpacity } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  PanResponder,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+
+const SWIPE_THRESHOLD = 120;
 
 export default function Search() {
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const recentSearches = ['Research Grants', 'Student Funding', 'Engineering Scholarships'];
-  const popularSearches = ['Graduate Studies', 'Undergraduate', 'PhD Programs', 'STEM Grants'];
+  const { width, height } = useWindowDimensions();
+
+  const CARD_WIDTH = width * 0.85;
+  const CARD_HEIGHT = height * 0.65;
+
+  const position = useRef(new Animated.ValueXY()).current;
+  const flipAnim = useRef(new Animated.Value(0)).current;
+  const [flipped, setFlipped] = useState(false);
+  const [swipeColor, setSwipeColor] = useState<'none' | 'right' | 'left'>('none');
+
+  // Keyboard controls for web
+  // left/right arrows to swipe, space/enter to flip
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        swipeOut('left');
+      } else if (event.key === 'ArrowRight') {
+        swipeOut('right');
+      } else if (event.key === ' ' || event.key === 'Enter') {
+        flipCard();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [flipped]);
+
+  // Horizontal rotation during swipe
+  const rotate = position.x.interpolate({
+    inputRange: [-width / 2, 0, width / 2],
+    outputRange: ['-15deg', '0deg', '15deg'],
+    extrapolate: 'clamp',
+  });
+
+  // Flip interpolation
+  const frontInterpolate = flipAnim.interpolate({
+    inputRange: [0, 180],
+    outputRange: ['0deg', '180deg'],
+  });
+
+  const backInterpolate = flipAnim.interpolate({
+    inputRange: [0, 180],
+    outputRange: ['180deg', '360deg'],
+  });
+
+  const swipeOut = (direction: 'left' | 'right') => {
+    setSwipeColor(direction);
+
+    Animated.timing(position, {
+      toValue: { x: direction === 'right' ? width * 1.5 : -width * 1.5, y: 0 },
+      duration: 300,
+      useNativeDriver: false,
+    }).start(() => {
+      position.setValue({ x: 0, y: 0 });
+      setSwipeColor('none');
+      setFlipped(false);
+      flipAnim.setValue(0);
+    });
+  };
+
+  const resetPosition = () => {
+    Animated.spring(position, {
+      toValue: { x: 0, y: 0 },
+      friction: 6,
+      useNativeDriver: false,
+    }).start(() => setSwipeColor('none'));
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gesture) => {
+        position.setValue({ x: gesture.dx, y: 0 });
+
+        if (gesture.dx > 30) setSwipeColor('right');
+        else if (gesture.dx < -30) setSwipeColor('left');
+        else setSwipeColor('none');
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx > SWIPE_THRESHOLD) swipeOut('right');
+        else if (gesture.dx < -SWIPE_THRESHOLD) swipeOut('left');
+        else resetPosition();
+      },
+    })
+  ).current;
+
+  const flipCard = () => {
+    Animated.timing(flipAnim, {
+      toValue: flipped ? 0 : 180,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+    setFlipped(!flipped);
+  };
+
+  const cardColor =
+    swipeColor === 'right'
+      ? '#dcfce7' // green tint
+      : swipeColor === 'left'
+      ? '#fee2e2' // red tint
+      : '#1a1a1a'; // dark background
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light">
-      {/* Header */}
-      <View className="bg-primary-purple pt-12 pb-6 px-6">
-        <Text className="text-white text-3xl font-bold mb-4">Search</Text>
-        
-        {/* Search Bar */}
-        <View className="bg-white rounded-button flex-row items-center px-4 py-3 shadow-sm">
-          <IconSymbol name="magnifyingglass" size={20} color="#6b7280" />
-          <TextInput
-            className="flex-1 ml-3 text-text-primary text-base"
-            placeholder="Search grants, universities..."
-            placeholderTextColor="#9ca3af"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <IconSymbol name="xmark.circle.fill" size={20} color="#9ca3af" />
-            </TouchableOpacity>
-          )}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.cardContainer}>
+        <Animated.View
+          {...panResponder.panHandlers}
+          style={[
+            styles.animatedCard,
+            {
+              width: CARD_WIDTH,
+              height: CARD_HEIGHT,
+              transform: [
+                { translateX: position.x },
+                { rotate },
+              ],
+            },
+          ]}
+        >
+          <Pressable onPress={flipCard} style={{ position: 'relative', outline: 'none' } as any}>
+            {/* FRONT */}
+            <Animated.View
+              style={[
+                styles.card,
+                {
+                  width: CARD_WIDTH,
+                  height: CARD_HEIGHT,
+                  backgroundColor: cardColor,
+                  transform: [{ rotateY: frontInterpolate }],
+                },
+              ]}
+            >
+              <Text style={styles.universityText}>University of Toronto</Text>
+              <Text style={styles.questionText}>
+                Are you a member of the LGBTQ+ community?
+              </Text>
+              <View style={styles.bottomInfo}>
+                <Text style={styles.valueText}>$40k – $60k</Text>
+                <Text style={styles.deadlineText}>Valid until 25-12</Text>
+              </View>
+              <Text style={styles.tapHint}>Tap to flip</Text>
+            </Animated.View>
+
+            {/* BACK */}
+            <Animated.View
+              style={[
+                styles.card,
+                styles.backCard,
+                {
+                  width: CARD_WIDTH,
+                  height: CARD_HEIGHT,
+                  transform: [{ rotateY: backInterpolate }],
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                },
+              ]}
+            >
+              <Text style={styles.backTitle}>Grant Details</Text>
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Value:</Text>
+                  <Text style={styles.detailValue}>$40k – $60k</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Deadline:</Text>
+                  <Text style={styles.detailValue}>December 25, 2026</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Organization:</Text>
+                  <Text style={styles.detailValue}>University of Toronto</Text>
+                </View>
+                <Text style={styles.requirementsTitle}>Requirements:</Text>
+                <Text style={styles.requirementsText}>
+                  • Must be a member of the LGBTQ+ community{'\n'}
+                  • Enrolled in an undergraduate program{'\n'}
+                  • Minimum GPA of 3.0{'\n'}
+                  • Canadian citizen or permanent resident
+                </Text>
+              </View>
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
+
+        {/* Swipe Indicators */}
+        <View style={styles.indicatorsContainer}>
+          <View style={[styles.indicator, styles.leftIndicator, swipeColor === 'left' && styles.activeLeft]}>
+            <Text style={styles.indicatorText}>✗</Text>
+          </View>
+          <View style={[styles.indicator, styles.rightIndicator, swipeColor === 'right' && styles.activeRight]}>
+            <Text style={styles.indicatorText}>✓</Text>
+          </View>
         </View>
       </View>
-
-      {/* Content */}
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-6 py-6">
-          {/* Recent Searches */}
-          {recentSearches.length > 0 && (
-            <View className="mb-6">
-              <Text className="text-text-primary text-lg font-semibold mb-3">Recent Searches</Text>
-              <View className="flex-row flex-wrap">
-                {recentSearches.map((search, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => setSearchQuery(search)}
-                    className="bg-background-card rounded-full px-4 py-2 mr-2 mb-2"
-                  >
-                    <Text className="text-text-primary text-sm">{search}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Popular Searches */}
-          <View>
-            <Text className="text-text-primary text-lg font-semibold mb-3">Popular Searches</Text>
-            <View className="flex-row flex-wrap">
-              {popularSearches.map((search, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => setSearchQuery(search)}
-                  className="bg-primary-purple/10 rounded-full px-4 py-2 mr-2 mb-2"
-                >
-                  <Text className="text-primary-purple text-sm font-medium">{search}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Search Tips */}
-          <View className="mt-8 bg-background-card rounded-card p-6">
-            <View className="flex-row items-center mb-3">
-              <IconSymbol name="lightbulb.fill" size={24} color="#6366f1" />
-              <Text className="text-text-primary text-lg font-semibold ml-3">Search Tips</Text>
-            </View>
-            <Text className="text-text-secondary text-sm leading-5">
-              • Try searching by university name{'\n'}
-              • Use keywords like "research" or "scholarship"{'\n'}
-              • Filter by price range or deadline{'\n'}
-              • Save grants you're interested in
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  cardContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  animatedCard: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    borderRadius: 24,
+    padding: 24,
+    backfaceVisibility: 'hidden',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 8,
+    userSelect: 'none',
+  } as any,
+  backCard: {
+    backgroundColor: '#6366f1',
+  },
+  universityText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 20,
+    userSelect: 'none',
+  } as any,
+  questionText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    lineHeight: 36,
+    flex: 1,
+    textAlignVertical: 'center',
+    userSelect: 'none',
+  } as any,
+  bottomInfo: {
+    marginTop: 20,
+  },
+  valueText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#6366f1',
+    textAlign: 'center',
+    marginBottom: 8,
+    userSelect: 'none',
+  } as any,
+  deadlineText: {
+    fontSize: 16,
+    color: '#9ca3af',
+    textAlign: 'center',
+    userSelect: 'none',
+  } as any,
+  tapHint: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 12,
+    fontStyle: 'italic',
+    userSelect: 'none',
+  } as any,
+  backTitle: {
+    fontSize: 28,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 24,
+    userSelect: 'none',
+  } as any,
+  detailsContainer: {
+    flex: 1,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  detailLabel: {
+    fontSize: 16,
+    color: '#e0e7ff',
+    fontWeight: '500',
+    userSelect: 'none',
+  } as any,
+  detailValue: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '600',
+    userSelect: 'none',
+  } as any,
+  requirementsTitle: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 12,
+    userSelect: 'none',
+  } as any,
+  requirementsText: {
+    fontSize: 15,
+    color: '#e0e7ff',
+    lineHeight: 24,
+    userSelect: 'none',
+  } as any,
+  indicatorsContainer: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 40,
+    pointerEvents: 'none',
+  },
+  indicator: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    opacity: 0.3,
+  },
+  leftIndicator: {
+    borderColor: '#ef4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  rightIndicator: {
+    borderColor: '#22c55e',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+  },
+  activeLeft: {
+    opacity: 1,
+    transform: [{ scale: 1.1 }],
+  },
+  activeRight: {
+    opacity: 1,
+    transform: [{ scale: 1.1 }],
+  },
+  indicatorText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    userSelect: 'none',
+  } as any,
+});
