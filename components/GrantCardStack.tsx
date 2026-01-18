@@ -31,6 +31,10 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
   const rotation = useSharedValue(0);
   const opacity = useSharedValue(1);
   
+  // Shared values for swipe feedback overlays
+  const leftOverlayOpacity = useSharedValue(0);
+  const rightOverlayOpacity = useSharedValue(0);
+  
   // Shared values for card stack animations
   const secondCardScale = useSharedValue(0.95);
   const secondCardOffsetY = useSharedValue(10);
@@ -71,6 +75,8 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
     translateY.value = 0;
     rotation.value = 0;
     opacity.value = 1;
+    leftOverlayOpacity.value = 0;
+    rightOverlayOpacity.value = 0;
   };
 
   const panGesture = Gesture.Pan()
@@ -82,6 +88,31 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
         [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
         [-15, 0, 15]
       );
+      
+      // Update overlay opacity based on swipe direction and distance
+      const threshold = 50;
+      if (event.translationX < -threshold) {
+        // Swiping left (discard)
+        leftOverlayOpacity.value = interpolate(
+          event.translationX,
+          [-SCREEN_WIDTH, -threshold],
+          [1, 0],
+          'clamp'
+        );
+        rightOverlayOpacity.value = 0;
+      } else if (event.translationX > threshold) {
+        // Swiping right (accept)
+        rightOverlayOpacity.value = interpolate(
+          event.translationX,
+          [threshold, SCREEN_WIDTH],
+          [0, 1],
+          'clamp'
+        );
+        leftOverlayOpacity.value = 0;
+      } else {
+        leftOverlayOpacity.value = 0;
+        rightOverlayOpacity.value = 0;
+      }
     })
     .onEnd((event) => {
       const shouldDismiss = Math.abs(event.translationX) > SWIPE_THRESHOLD;
@@ -103,6 +134,8 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
         translateX.value = withSpring(0, { damping: 15, stiffness: 100 });
         translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
         rotation.value = withSpring(0, { damping: 15, stiffness: 100 });
+        leftOverlayOpacity.value = withTiming(0, { duration: 200 });
+        rightOverlayOpacity.value = withTiming(0, { duration: 200 });
       }
     });
 
@@ -115,6 +148,18 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
       ],
       opacity: opacity.value,
       zIndex: 3,
+    };
+  });
+
+  const leftOverlayStyle = useAnimatedStyle(() => {
+    return {
+      opacity: leftOverlayOpacity.value,
+    };
+  });
+
+  const rightOverlayStyle = useAnimatedStyle(() => {
+    return {
+      opacity: rightOverlayOpacity.value,
     };
   });
 
@@ -176,6 +221,8 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
           <SwipeableGrantCard
             grant={grants[currentIndex]}
             animatedStyle={mainCardStyle}
+            leftOverlayStyle={leftOverlayStyle}
+            rightOverlayStyle={rightOverlayStyle}
           />
         </GestureDetector>
       )}

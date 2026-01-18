@@ -44,7 +44,7 @@ export default function TabLayout() {
           title: 'Search',
           tabBarIcon: ({ color }) => <IconSymbol size={32} name="magnifyingglass" color={color} />,
           tabBarButton: (props) => (
-            <View style={{ marginTop: -20 }}>
+            <View style={{ marginTop: -20, alignItems: 'center', justifyContent: 'center' }}>
               <HapticTab
                 {...props}
                 style={[
@@ -54,10 +54,15 @@ export default function TabLayout() {
                     borderRadius: 35,
                     width: 70,
                     height: 70,
+                    minWidth: 70,
+                    minHeight: 70,
+                    maxWidth: 70,
+                    maxHeight: 70,
                     justifyContent: 'center',
                     alignItems: 'center',
                     borderWidth: 4,
                     borderColor: '#ffffff',
+                    overflow: 'hidden',
                   },
                 ]}
               />
