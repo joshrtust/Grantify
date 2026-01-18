@@ -36,7 +36,22 @@ export default function Search() {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const user = auth.currentUser;
+  
+  // Use state for user to ensure we have the latest auth state
+  const [currentUser, setCurrentUser] = useState(auth.currentUser);
+
+  // Listen to auth state changes
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        console.warn('⚠️ User not authenticated');
+      } else {
+        console.log('✅ User authenticated:', user.uid);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   // Fetch grants from Firestore
   useEffect(() => {
@@ -113,7 +128,11 @@ export default function Search() {
       useNativeDriver: false,
     }).start(async () => {
       // Save to applications collection if swiped right
-      const currentUser = auth.currentUser; // Get fresh user state
+      
+      console.log('Swipe direction:', direction);
+      console.log('Current user:', currentUser?.uid);
+      console.log('Current grant:', grants[currentIndex]?.name);
+      
       if (direction === 'right' && currentUser && grants[currentIndex]) {
         try {
           // Check if application already exists
@@ -126,17 +145,23 @@ export default function Search() {
 
           if (existingApplications.empty) {
             // Only add if it doesn't exist
-            await addDoc(collection(db, 'applications'), {
+            const docRef = await addDoc(collection(db, 'applications'), {
               UserID: currentUser.uid,
               GrantID: grants[currentIndex].id,
+              GrantName: grants[currentIndex].name,
+              AppliedAt: new Date().toISOString(),
             });
-            console.log('Grant saved to applications:', grants[currentIndex].name);
+            console.log('✅ Grant saved to applications:', grants[currentIndex].name, 'DocID:', docRef.id);
           } else {
-            console.log('Grant already in applications:', grants[currentIndex].name);
+            console.log('ℹ️ Grant already in applications:', grants[currentIndex].name);
           }
         } catch (error) {
-          console.error('Error saving application:', error);
+          console.error('❌ Error saving application:', error);
+          alert(`Failed to save application: ${error}`);
         }
+      } else if (direction === 'right' && !currentUser) {
+        console.error('❌ Cannot save: User not authenticated');
+        alert('You must be logged in to save grants');
       }
 
       // Move to next card
