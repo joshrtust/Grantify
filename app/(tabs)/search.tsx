@@ -1,5 +1,5 @@
 import { auth, db } from '@/FirebaseConfig';
-import { addDoc, collection, getDocs } from 'firebase/firestore';
+import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -113,13 +113,37 @@ export default function Search() {
       useNativeDriver: false,
     }).start(async () => {
       // Save to applications collection if swiped right
-      if (direction === 'right' && user && grants[currentIndex]) {
+      const currentUser = auth.currentUser; // Get fresh user state
+      
+      console.log('=== SWIPE DEBUG ===');
+      console.log('Current user object:', currentUser);
+      console.log('User UID:', currentUser?.uid);
+      console.log('User email:', currentUser?.email);
+      console.log('Auth state:', auth);
+      
+      if (direction === 'right' && currentUser && grants[currentIndex]) {
         try {
-          await addDoc(collection(db, 'applications'), {
-            UserID: user.uid,
-            GrantID: grants[currentIndex].id,
-          });
-          console.log('Grant saved to applications:', grants[currentIndex].name);
+          console.log('Saving application for UserID:', currentUser.uid);
+          console.log('Grant ID:', grants[currentIndex].id);
+          
+          // Check if application already exists
+          const existingApplicationQuery = query(
+            collection(db, 'applications'),
+            where('UserID', '==', currentUser.uid),
+            where('GrantID', '==', grants[currentIndex].id)
+          );
+          const existingApplications = await getDocs(existingApplicationQuery);
+
+          if (existingApplications.empty) {
+            // Only add if it doesn't exist
+            await addDoc(collection(db, 'applications'), {
+              UserID: currentUser.uid,
+              GrantID: grants[currentIndex].id,
+            });
+            console.log('Grant saved to applications:', grants[currentIndex].name);
+          } else {
+            console.log('Grant already in applications:', grants[currentIndex].name);
+          }
         } catch (error) {
           console.error('Error saving application:', error);
         }
