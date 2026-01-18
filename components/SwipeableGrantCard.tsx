@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ImageBackground } from 'react-native';
+import { ImageBackground, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
 export interface Grant {
@@ -14,18 +14,20 @@ export interface Grant {
 interface SwipeableGrantCardProps {
   grant: Grant;
   animatedStyle?: ReturnType<typeof useAnimatedStyle>;
+  leftOverlayStyle?: ReturnType<typeof useAnimatedStyle>;
+  rightOverlayStyle?: ReturnType<typeof useAnimatedStyle>;
 }
 
-export default function SwipeableGrantCard({ grant, animatedStyle }: SwipeableGrantCardProps) {
+export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlayStyle, rightOverlayStyle }: SwipeableGrantCardProps) {
   return (
     <Animated.View
       style={[
         animatedStyle,
         {
-          width: '90%',
-          height: '70%',
-          maxWidth: 400,
-          maxHeight: 600,
+          width: '88%',
+          height: '65%',
+          maxWidth: 380,
+          maxHeight: 650,
         },
       ]}
       className="absolute rounded-card bg-background-card shadow-lg overflow-hidden"
@@ -67,6 +69,52 @@ export default function SwipeableGrantCard({ grant, animatedStyle }: SwipeableGr
           </Text>
         </View>
       </View>
+
+      {/* Swipe Left Overlay (Discard - Red) */}
+      {leftOverlayStyle && (
+        <Animated.View
+          style={[
+            leftOverlayStyle,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(239, 68, 68, 0.8)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: 20,
+            },
+          ]}
+        >
+          <Text className="text-white text-4xl font-bold">✕</Text>
+          <Text className="text-white text-xl font-semibold mt-2">DISCARD</Text>
+        </Animated.View>
+      )}
+
+      {/* Swipe Right Overlay (Accept - Green) */}
+      {rightOverlayStyle && (
+        <Animated.View
+          style={[
+            rightOverlayStyle,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(34, 197, 94, 0.8)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: 20,
+            },
+          ]}
+        >
+          <Text className="text-white text-4xl font-bold">✓</Text>
+          <Text className="text-white text-xl font-semibold mt-2">ACCEPT</Text>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 }
