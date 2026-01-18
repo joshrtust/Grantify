@@ -1,72 +1,139 @@
 import { Grant } from '@/components/SwipeableGrantCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { auth, db } from '@/FirebaseConfig';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function MyGrants() {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
   const user = auth.currentUser;
 
-  useEffect(() => {
-    const fetchUserGrants = async () => {
-      if (!user) {
-        console.log('No user logged in');
-        setLoading(false);
-        return;
-      }
+  const fetchUserGrants = useCallback(async () => {
+    if (!user) {
+      console.log('No user logged in');
+      setLoading(false);
+      return;
+    }
 
-      try {
-        console.log('Current user UID:', user.uid);
+    try {
+      console.log('Current user UID:', user.uid);
+      
+      // Step 1: Query applications collection for this user
+      const applicationsQuery = query(
+        collection(db, 'applications'),
+        where('UserID', '==', user.uid)
+      );
+      const applicationsSnapshot = await getDocs(applicationsQuery);
+      
+      console.log('Applications found:', applicationsSnapshot.docs.length);
+
+      // Step 2: Get all GrantIDs from the applications
+      const grantIds = applicationsSnapshot.docs.map(doc => doc.data().GrantID).filter(id => id);
+
+      console.log('Grant IDs to fetch:', grantIds);
+
+      // Step 3: Fetch each grant from the grants collection
+      const fetchedGrants: Grant[] = [];
+      for (const grantId of grantIds) {
+        const grantDocRef = doc(db, 'grants', grantId);
+        const grantDoc = await getDoc(grantDocRef);
         
-        // Step 1: Query applications collection for this user
-        const applicationsQuery = query(
-          collection(db, 'applications'),
-          where('UserID', '==', user.uid)
-        );
-        const applicationsSnapshot = await getDocs(applicationsQuery);
-        
-        console.log('Applications found:', applicationsSnapshot.docs.length);
-
-        // Step 2: Get all GrantIDs from the applications
-        const grantIds = applicationsSnapshot.docs.map(doc => doc.data().GrantID).filter(id => id);
-
-        console.log('Grant IDs to fetch:', grantIds);
-
-        // Step 3: Fetch each grant from the grants collection
-        const fetchedGrants: Grant[] = [];
-        for (const grantId of grantIds) {
-          const grantDocRef = doc(db, 'grants', grantId);
-          const grantDoc = await getDoc(grantDocRef);
+        if (grantDoc.exists()) {
+          const grantData = grantDoc.data();
+          console.log('Grant found:', grantDoc.id, grantData);
           
-          if (grantDoc.exists()) {
-            const grantData = grantDoc.data();
-            console.log('Grant found:', grantDoc.id, grantData);
-            fetchedGrants.push({
-              id: grantDoc.id,
-              university: grantData.name || 'Unknown Grant',
-              question: grantData.Requirements || 'No requirements listed',
-              priceRange: grantData.Value || 'N/A',
-              validUntil: 'N/A', // Not in your DB structure
-            });
-          } else {
-            console.log('Grant not found:', grantId);
-          }
+          // Handle both capitalized and lowercase field names
+          const grantName = grantData.name || grantData.Name || 'Unknown Grant';
+          const requirements = grantData.Requirements || grantData.requirements;
+          const value = grantData.Value || grantData.value || 'N/A';
+          const grantUrl = grantData.URL || grantData.url || '';
+          
+          fetchedGrants.push({
+            id: grantDoc.id,
+            university: grantName,
+            question: Array.isArray(requirements) ? requirements.join(', ') : (requirements || 'No requirements listed'),
+            priceRange: value,
+            validUntil: 'N/A', // Not in your DB structure
+            url: grantUrl,
+          });
+        } else {
+          console.log('Grant not found:', grantId);
         }
-
-        console.log('Total grants fetched:', fetchedGrants.length);
-        setGrants(fetchedGrants);
-      } catch (error) {
-        console.error('Error fetching user grants:', error);
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchUserGrants();
+      console.log('Total grants fetched:', fetchedGrants.length);
+      setGrants(fetchedGrants);
+    } catch (error) {
+      console.error('Error fetching user grants:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchUserGrants();
+  }, [fetchUserGrants]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchUserGrants();
+    }, [fetchUserGrants])
+  );
+
+  const handleViewDetails = async (url: string | undefined) => {
+    if (!url) {
+      Alert.alert('No URL', 'This grant does not have a URL available.');
+      return;
+    }
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Invalid URL', 'Unable to open this URL.');
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+      Alert.alert('Error', 'Failed to open the URL.');
+    }
+  };
+
+  const handleMarkAsDone = async (grantId: string) => {
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert('Error', 'No user logged in');
+      return;
+    }
+
+    try {
+      // Find the application document for this user and grant
+      const applicationsQuery = query(
+        collection(db, 'applications'),
+        where('UserID', '==', user.uid),
+        where('GrantID', '==', grantId)
+      );
+      const applicationsSnapshot = await getDocs(applicationsQuery);
+
+      if (!applicationsSnapshot.empty) {
+        // Delete the first matching document
+        const docToDelete = applicationsSnapshot.docs[0];
+        await deleteDoc(doc(db, 'applications', docToDelete.id));
+        
+        // Remove from local state
+        setGrants(prevGrants => prevGrants.filter(grant => grant.id !== grantId));
+        
+        Alert.alert('Success', 'Grant marked as done and removed from your list!');
+      }
+    } catch (error) {
+      console.error('Error removing grant:', error);
+      Alert.alert('Error', 'Failed to remove grant. Please try again.');
+    }
+  };
 
   if (loading) {
     return (
@@ -107,10 +174,19 @@ export default function MyGrants() {
               
               <View style={styles.divider} />
               
-              <View style={styles.infoRow}>
-                <IconSymbol name="checkmark.circle.fill" size={18} color="#6366f1" />
-                <Text style={styles.infoLabel}>Requirement:</Text>
-                <Text style={styles.infoValue}>{grant.question}</Text>
+              <View style={styles.requirementsSection}>
+                <View style={styles.requirementsTitleRow}>
+                  <IconSymbol name="checkmark.circle.fill" size={18} color="#6366f1" />
+                  <Text style={styles.requirementsTitle}>Requirements:</Text>
+                </View>
+                <View style={styles.requirementsList}>
+                  {grant.question.split(',').map((req: string, index: number) => (
+                    <View key={index} style={styles.requirementItem}>
+                      <Text style={styles.bulletPoint}>•</Text>
+                      <Text style={styles.requirementText}>{req.trim()}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
               
               <View style={styles.infoRow}>
@@ -119,10 +195,23 @@ export default function MyGrants() {
                 <Text style={styles.infoValue}>{grant.validUntil}</Text>
               </View>
               
-              <TouchableOpacity style={styles.applyButton}>
-                <Text style={styles.applyButtonText}>View Details</Text>
-                <IconSymbol name="chevron.right" size={16} color="#ffffff" />
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={styles.applyButton}
+                  onPress={() => handleViewDetails(grant.url)}
+                >
+                  <Text style={styles.applyButtonText}>View Details</Text>
+                  <IconSymbol name="chevron.right" size={16} color="#ffffff" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.appliedButton}
+                  onPress={() => handleMarkAsDone(grant.id)}
+                >
+                  <IconSymbol name="checkmark.circle.fill" size={18} color="#ffffff" />
+                  <Text style={styles.appliedButtonText}>Done!</Text>
+                </TouchableOpacity>
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -224,6 +313,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#333333',
     marginVertical: 12,
   },
+  requirementsSection: {
+    marginBottom: 12,
+  },
+  requirementsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  requirementsTitle: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  requirementsList: {
+    marginLeft: 26,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  bulletPoint: {
+    color: '#6366f1',
+    fontSize: 14,
+    marginRight: 8,
+    fontWeight: 'bold',
+  },
+  requirementText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#ffffff',
+    lineHeight: 20,
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -241,6 +363,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ffffff',
   },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  appliedButton: {
+    backgroundColor: '#16a34a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 6,
+  },
+  appliedButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   applyButton: {
     backgroundColor: '#6366f1',
     flexDirection: 'row',
@@ -249,7 +391,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
-    marginTop: 8,
+    flex: 1,
   },
   applyButtonText: {
     color: '#ffffff',

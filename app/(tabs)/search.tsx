@@ -114,18 +114,8 @@ export default function Search() {
     }).start(async () => {
       // Save to applications collection if swiped right
       const currentUser = auth.currentUser; // Get fresh user state
-      
-      console.log('=== SWIPE DEBUG ===');
-      console.log('Current user object:', currentUser);
-      console.log('User UID:', currentUser?.uid);
-      console.log('User email:', currentUser?.email);
-      console.log('Auth state:', auth);
-      
       if (direction === 'right' && currentUser && grants[currentIndex]) {
         try {
-          console.log('Saving application for UserID:', currentUser.uid);
-          console.log('Grant ID:', grants[currentIndex].id);
-          
           // Check if application already exists
           const existingApplicationQuery = query(
             collection(db, 'applications'),
