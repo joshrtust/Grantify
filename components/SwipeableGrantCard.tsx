@@ -9,6 +9,7 @@ export interface Grant {
   priceRange: string;
   validUntil: string;
   backgroundImage?: string;
+  url?: string;
 }
 
 interface SwipeableGrantCardProps {
