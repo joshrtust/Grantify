@@ -1,26 +1,12 @@
 // Import script for scholarships-canada JSON to Firebase
-import { initializeApp } from 'firebase/app';
-import { doc, getFirestore, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { db } from '../FirebaseConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Firebase configuration (same as FirebaseConfig.ts)
-const firebaseConfig = {
-  apiKey: "AIzaSyBpVcOUQ9wOkj1gqKtKHLzNqUdOPoYv3Wg",
-  authDomain: "grantify-9c488.firebaseapp.com",
-  projectId: "grantify-9c488",
-  storageBucket: "grantify-9c488.firebasestorage.app",
-  messagingSenderId: "594586262879",
-  appId: "1:594586262879:web:fbd7f97ffedea6f9782aea"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 // Function to convert field_requirements to array
 function normalizeRequirements(fieldRequirements) {
