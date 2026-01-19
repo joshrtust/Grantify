@@ -1,11 +1,14 @@
 # Welcome to Grantify
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
-> Grantify is a gamified tool to help you find scholarships and grants that you can apply to!
+> Have you ever applied for an educational grant? Many students will say no, as they don't have the time to search for ones where they meet the requirements. Grantify is a gamified tool to help find scholarships and grants that you can apply to!
 
 ## 📦 Installation
 ```bash
-git clone [https://github.com/joshrtust/Grantify](https://github.com/joshrtust/Grantify)
+git clone https://github.com/joshrtust/Grantify
 cd project-name
 npm install
 npm run
