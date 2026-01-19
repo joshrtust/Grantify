@@ -4,7 +4,8 @@ import { auth, db } from '@/FirebaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, deleteDoc, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function MyGrants() {
   const [grants, setGrants] = useState<Grant[]>([]);
