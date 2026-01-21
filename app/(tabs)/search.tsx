@@ -40,12 +40,25 @@ export default function Search() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   
-  // Use state for user to ensure we have the latest auth state
+  // Use refs to always have the latest state (avoids closure issues)
+  const currentUserRef = useRef(auth.currentUser);
+  const grantsRef = useRef<Grant[]>([]);
+  const currentIndexRef = useRef(0);
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
+  
+  // Update refs whenever state changes
+  useEffect(() => {
+    grantsRef.current = grants;
+  }, [grants]);
+  
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
+      currentUserRef.current = user;
       setCurrentUser(user);
       if (!user) {
         console.warn('⚠️ User not authenticated');
@@ -128,6 +141,21 @@ export default function Search() {
   });
 
   const swipeOut = (direction: 'left' | 'right') => {
+    // Capture grant and user immediately from refs (always current values)
+    const currentGrants = grantsRef.current;
+    const currentIdx = currentIndexRef.current;
+    const grantToSave = currentGrants[currentIdx];
+    const userAtSwipe = currentUserRef.current;
+
+    console.log('🔄 Swipe initiated:', {
+      direction,
+      grantId: grantToSave?.id,
+      grantName: grantToSave?.name,
+      userId: userAtSwipe?.uid,
+      index: currentIdx,
+      totalGrants: currentGrants.length,
+    });
+
     setSwipeColor(direction);
 
     Animated.timing(position, {
@@ -136,43 +164,63 @@ export default function Search() {
       useNativeDriver: false,
     }).start(async () => {
       // Save to applications collection if swiped right
-      
-      console.log('Swipe direction:', direction);
-      console.log('Current user:', currentUser?.uid);
-      console.log('Current grant:', grants[currentIndex]?.name);
-      
-      if (direction === 'right' && currentUser && grants[currentIndex]) {
+      if (direction === 'right' && userAtSwipe && grantToSave) {
         try {
+          console.log('💾 Attempting to save grant:', {
+            name: grantToSave.name,
+            id: grantToSave.id,
+            userId: userAtSwipe.uid,
+          });
+          
           // Check if application already exists
           const existingApplicationQuery = query(
             collection(db, 'applications'),
-            where('UserID', '==', currentUser.uid),
-            where('GrantID', '==', grants[currentIndex].id)
+            where('UserID', '==', userAtSwipe.uid),
+            where('GrantID', '==', grantToSave.id)
           );
+          
           const existingApplications = await getDocs(existingApplicationQuery);
+          
+          console.log('🔍 Query results:', {
+            isEmpty: existingApplications.empty,
+            count: existingApplications.size,
+            docs: existingApplications.docs.map(d => ({
+              id: d.id,
+              data: d.data(),
+            })),
+          });
 
           if (existingApplications.empty) {
             // Only add if it doesn't exist
             const docRef = await addDoc(collection(db, 'applications'), {
-              UserID: currentUser.uid,
-              GrantID: grants[currentIndex].id,
-              GrantName: grants[currentIndex].name,
+              UserID: userAtSwipe.uid,
+              GrantID: grantToSave.id,
+              GrantName: grantToSave.name,
               AppliedAt: new Date().toISOString(),
             });
-            console.log('✅ Grant saved to applications:', grants[currentIndex].name, 'DocID:', docRef.id);
+            console.log('✅ Grant saved to applications:', grantToSave.name, 'DocID:', docRef.id);
           } else {
-            console.log('ℹ️ Grant already in applications:', grants[currentIndex].name);
+            console.log('ℹ️ Grant already in applications:', {
+              grantName: grantToSave.name,
+              grantId: grantToSave.id,
+              existingDocs: existingApplications.docs.map(d => d.data()),
+            });
           }
         } catch (error) {
           console.error('❌ Error saving application:', error);
-          alert(`Failed to save application: ${error}`);
+          console.error('❌ Error details:', {
+            errorMessage: error instanceof Error ? error.message : String(error),
+            grantId: grantToSave?.id,
+            userId: userAtSwipe?.uid,
+          });
         }
-      } else if (direction === 'right' && !currentUser) {
-        console.error('❌ Cannot save: User not authenticated');
-        alert('You must be logged in to save grants');
+      } else if (direction === 'right' && !userAtSwipe) {
+        console.error('❌ Cannot save: User not authenticated at swipe time');
+      } else if (direction === 'right' && !grantToSave) {
+        console.error('❌ Cannot save: Grant is undefined at swipe time');
       }
 
-      // Move to next card
+      // Move to next card (always happens regardless of save success)
       position.setValue({ x: 0, y: 0 });
       setSwipeColor('none');
       setFlipped(false);
@@ -189,6 +237,10 @@ export default function Search() {
     }).start(() => setSwipeColor('none'));
   };
 
+  // Use a ref to always access the latest swipeOut function
+  const swipeOutRef = useRef(swipeOut);
+  swipeOutRef.current = swipeOut;
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
@@ -200,8 +252,8 @@ export default function Search() {
         else setSwipeColor('none');
       },
       onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SWIPE_THRESHOLD) swipeOut('right');
-        else if (gesture.dx < -SWIPE_THRESHOLD) swipeOut('left');
+        if (gesture.dx > SWIPE_THRESHOLD) swipeOutRef.current('right');
+        else if (gesture.dx < -SWIPE_THRESHOLD) swipeOutRef.current('left');
         else resetPosition();
       },
     })
