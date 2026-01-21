@@ -27,8 +27,10 @@ interface Grant {
 export default function Search() {
   const { width, height } = useWindowDimensions();
 
-  const CARD_WIDTH = width * 0.85;
-  const CARD_HEIGHT = height * 0.65;
+  // Constrain card width to mobile-like dimensions on larger screens
+  const maxCardWidth = 450; // Max width for desktop
+  const CARD_WIDTH = Math.min(width * 0.85, maxCardWidth);
+  const CARD_HEIGHT = height * 0.75;
 
   const position = useRef(new Animated.ValueXY()).current;
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -247,99 +249,102 @@ export default function Search() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.cardContainer}>
-        <Animated.View
-          {...panResponder.panHandlers}
-          style={[
-            styles.animatedCard,
-            {
-              width: CARD_WIDTH,
-              height: CARD_HEIGHT,
-              transform: [
-                { translateX: position.x },
-                { rotate },
-              ],
-            },
-          ]}
-        >
-          <Pressable onPress={flipCard} style={{ position: 'relative', outline: 'none' } as any}>
-            {/* FRONT */}
-            <Animated.View
-              style={[
-                styles.card,
-                {
-                  width: CARD_WIDTH,
-                  height: CARD_HEIGHT,
-                  backgroundColor: cardColor,
-                  transform: [{ rotateY: frontInterpolate }],
-                },
-              ]}
-            >
-              <Text style={styles.universityText}>{currentGrant.name}</Text>
-              <Text style={styles.questionText}>
-                {currentGrant.Requirements.length > 0 ? currentGrant.Requirements[0] : 'No requirements listed'}
-              </Text>
-              <View style={styles.bottomInfo}>
-                <Text style={styles.valueText}>{currentGrant.Value}</Text>
-              </View>
-              <Text style={styles.tapHint}>Tap to flip</Text>
-            </Animated.View>
+      <View style={styles.mainContent}>
+        {/* Left Indicator */}
+        <View style={[styles.indicator, styles.leftIndicator, swipeColor === 'left' && styles.activeLeft]}>
+          <Text style={styles.indicatorText}>✗</Text>
+        </View>
 
-            {/* BACK */}
-            <Animated.View
-              style={[
-                styles.card,
-                styles.backCard,
-                {
-                  width: CARD_WIDTH,
-                  height: CARD_HEIGHT,
-                  transform: [{ rotateY: backInterpolate }],
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                },
-              ]}
-            >
-              <Text style={styles.backTitle}>Grant Details</Text>
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Value:</Text>
-                  <Text style={styles.detailValue}>{currentGrant.Value}</Text>
+        {/* Card */}
+        <View style={styles.cardContainer}>
+          <Animated.View
+            {...panResponder.panHandlers}
+            style={[
+              styles.animatedCard,
+              {
+                width: CARD_WIDTH,
+                height: CARD_HEIGHT,
+                transform: [
+                  { translateX: position.x },
+                  { rotate },
+                ],
+              },
+            ]}
+          >
+            <Pressable onPress={flipCard} style={{ position: 'relative', outline: 'none' } as any}>
+              {/* FRONT */}
+              <Animated.View
+                style={[
+                  styles.card,
+                  {
+                    width: CARD_WIDTH,
+                    height: CARD_HEIGHT,
+                    backgroundColor: cardColor,
+                    transform: [{ rotateY: frontInterpolate }],
+                  },
+                ]}
+              >
+                <Text style={styles.universityText}>{currentGrant.name}</Text>
+                <Text style={styles.questionText}>
+                  {currentGrant.Requirements.length > 0 ? currentGrant.Requirements[0] : 'No requirements listed'}
+                </Text>
+                <View style={styles.bottomInfo}>
+                  <Text style={styles.valueText}>{currentGrant.Value}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Organization:</Text>
-                  <Text style={styles.detailValue}>{currentGrant.name}</Text>
-                </View>
-                {currentGrant.URL && (
+                <Text style={styles.tapHint}>Tap to flip</Text>
+              </Animated.View>
+
+              {/* BACK */}
+              <Animated.View
+                style={[
+                  styles.card,
+                  styles.backCard,
+                  {
+                    width: CARD_WIDTH,
+                    height: CARD_HEIGHT,
+                    transform: [{ rotateY: backInterpolate }],
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                  },
+                ]}
+              >
+                <Text style={styles.backTitle}>Grant Details</Text>
+                <View style={styles.detailsContainer}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>URL:</Text>
-                    <Text style={[styles.detailValue, styles.urlText]} numberOfLines={1}>
-                      {currentGrant.URL}
-                    </Text>
+                    <Text style={styles.detailLabel}>Value:</Text>
+                    <Text style={styles.detailValue}>{currentGrant.Value}</Text>
                   </View>
-                )}
-                <Text style={styles.requirementsTitle}>Requirements:</Text>
-                <View style={styles.requirementsList}>
-                  {currentGrant.Requirements.map((requirement, index) => (
-                    <View key={index} style={styles.requirementItem}>
-                      <Text style={styles.bulletPoint}>•</Text>
-                      <Text style={styles.requirementsText}>{requirement}</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Organization:</Text>
+                    <Text style={styles.detailValue}>{currentGrant.name}</Text>
+                  </View>
+                  {currentGrant.URL && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>URL:</Text>
+                      <Text style={[styles.detailValue, styles.urlText]} numberOfLines={1}>
+                        {currentGrant.URL}
+                      </Text>
                     </View>
-                  ))}
+                  )}
+                  <Text style={styles.requirementsTitle}>Requirements:</Text>
+                  <View style={styles.requirementsList}>
+                    {currentGrant.Requirements.map((requirement, index) => (
+                      <View key={index} style={styles.requirementItem}>
+                        <Text style={styles.bulletPoint}>•</Text>
+                        <Text style={styles.requirementsText}>{requirement}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              </View>
-            </Animated.View>
-          </Pressable>
-        </Animated.View>
+              </Animated.View>
+            </Pressable>
+          </Animated.View>
+        </View>
 
-        {/* Swipe Indicators */}
-        <View style={styles.indicatorsContainer}>
-          <View style={[styles.indicator, styles.leftIndicator, swipeColor === 'left' && styles.activeLeft]}>
-            <Text style={styles.indicatorText}>✗</Text>
-          </View>
-          <View style={[styles.indicator, styles.rightIndicator, swipeColor === 'right' && styles.activeRight]}>
-            <Text style={styles.indicatorText}>✓</Text>
-          </View>
+        {/* Right Indicator */}
+        <View style={[styles.indicator, styles.rightIndicator, swipeColor === 'right' && styles.activeRight]}>
+          <Text style={styles.indicatorText}>✓</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -350,6 +355,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  mainContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 30,
   },
   loadingContainer: {
     flex: 1,
@@ -366,10 +378,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
   },
   animatedCard: {
     justifyContent: 'center',
@@ -505,16 +515,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     flex: 1,
   } as any,
-  indicatorsContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'web' ? 40 : 100,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 40,
-    pointerEvents: 'none',
-  },
   indicator: {
     width: 80,
     height: 80,

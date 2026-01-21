@@ -161,9 +161,10 @@ export default function MyGrants() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Grants List */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+      <View style={styles.contentContainer}>
+        {/* Grants List */}
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
           {grants.map((grant) => (
             <TouchableOpacity key={grant.id} style={styles.grantCard}>
               <View style={styles.cardHeader}>
@@ -198,6 +199,13 @@ export default function MyGrants() {
               
               <View style={styles.buttonRow}>
                 <TouchableOpacity 
+                  style={styles.checkButton}
+                  onPress={() => {}}
+                >
+                  <IconSymbol name="checkmark.circle.fill" size={18} color="#ffffff" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
                   style={styles.applyButton}
                   onPress={() => handleViewDetails(grant.url)}
                 >
@@ -209,14 +217,14 @@ export default function MyGrants() {
                   style={styles.appliedButton}
                   onPress={() => handleMarkAsDone(grant.id)}
                 >
-                  <IconSymbol name="checkmark.circle.fill" size={18} color="#ffffff" />
-                  <Text style={styles.appliedButtonText}>Done!</Text>
+                  <IconSymbol name="trash" size={18} color="#e5e7eb" />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
           ))}
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -225,6 +233,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+    alignItems: 'center',
+  },
+  contentContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 900,
   },
   header: {
     backgroundColor: '#6366f1',
@@ -369,8 +383,17 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 8,
   },
-  appliedButton: {
+  checkButton: {
     backgroundColor: '#16a34a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  appliedButton: {
+    backgroundColor: '#dc2626',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

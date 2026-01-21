@@ -69,11 +69,12 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.contentContainer}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Centered Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
@@ -139,13 +140,17 @@ export default function Profile() {
           </View>
         )}
 
+        {/* Spacer to push button to bottom */}
+        <View style={{ flex: 1, minHeight: 40 }} />
+
         {/* Sign Out Button */}
         <View style={styles.menuContainer}>
           <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -154,6 +159,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+    alignItems: 'center',
+  },
+  contentContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 900,
   },
   scrollView: {
     flex: 1,
