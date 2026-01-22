@@ -23,6 +23,7 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
   return (
     <Animated.View
       style={[
+        // @ts-expect-error - Reanimated style types have cursor incompatibility with RN web types
         animatedStyle,
         {
           width: '88%',
@@ -75,6 +76,7 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
       {leftOverlayStyle && (
         <Animated.View
           style={[
+            // @ts-expect-error - Reanimated style types have cursor incompatibility with RN web types
             leftOverlayStyle,
             {
               position: 'absolute',
@@ -98,6 +100,7 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
       {rightOverlayStyle && (
         <Animated.View
           style={[
+            // @ts-expect-error - Reanimated style types have cursor incompatibility with RN web types
             rightOverlayStyle,
             {
               position: 'absolute',

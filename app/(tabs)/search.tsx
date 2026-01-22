@@ -1,11 +1,10 @@
 import { auth, db } from '@/FirebaseConfig';
 import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
   PanResponder,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -44,7 +43,6 @@ export default function Search() {
   const currentUserRef = useRef(auth.currentUser);
   const grantsRef = useRef<Grant[]>([]);
   const currentIndexRef = useRef(0);
-  const [currentUser, setCurrentUser] = useState(auth.currentUser);
   
   // Update refs whenever state changes
   useEffect(() => {
@@ -59,7 +57,6 @@ export default function Search() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       currentUserRef.current = user;
-      setCurrentUser(user);
       if (!user) {
         console.warn('⚠️ User not authenticated');
       } else {
@@ -98,30 +95,6 @@ export default function Search() {
     fetchGrants();
   }, []);
 
-  // Keyboard controls for web
-  // left/right arrows to swipe, space/enter to flip
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft') {
-        swipeOut('left');
-      } else if (event.key === 'ArrowRight') {
-        swipeOut('right');
-      } else if (event.key === ' ' || event.key === 'Enter') {
-        flipCard();
-      }
-    };
-
-    // Check if window.addEventListener exists and is a function (web only)
-    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        if (typeof window.removeEventListener === 'function') {
-          window.removeEventListener('keydown', handleKeyDown);
-        }
-      };
-    }
-  }, [flipped]);
-
   // Horizontal rotation during swipe
   const rotate = position.x.interpolate({
     inputRange: [-width / 2, 0, width / 2],
@@ -140,7 +113,7 @@ export default function Search() {
     outputRange: ['180deg', '360deg'],
   });
 
-  const swipeOut = (direction: 'left' | 'right') => {
+  const swipeOut = useCallback((direction: 'left' | 'right') => {
     // Capture grant and user immediately from refs (always current values)
     const currentGrants = grantsRef.current;
     const currentIdx = currentIndexRef.current;
@@ -227,7 +200,7 @@ export default function Search() {
       flipAnim.setValue(0);
       setCurrentIndex(prev => prev + 1);
     });
-  };
+  }, [position, width, flipAnim]);
 
   const resetPosition = () => {
     Animated.spring(position, {
@@ -259,14 +232,38 @@ export default function Search() {
     })
   ).current;
 
-  const flipCard = () => {
+  const flipCard = useCallback(() => {
     Animated.timing(flipAnim, {
       toValue: flipped ? 0 : 180,
       duration: 400,
       useNativeDriver: false,
     }).start();
     setFlipped(!flipped);
-  };
+  }, [flipAnim, flipped]);
+
+  // Keyboard controls for web
+  // left/right arrows to swipe, space/enter to flip
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        swipeOut('left');
+      } else if (event.key === 'ArrowRight') {
+        swipeOut('right');
+      } else if (event.key === ' ' || event.key === 'Enter') {
+        flipCard();
+      }
+    };
+
+    // Check if window.addEventListener exists and is a function (web only)
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        if (typeof window.removeEventListener === 'function') {
+          window.removeEventListener('keydown', handleKeyDown);
+        }
+      };
+    }
+  }, [flipped, flipCard, swipeOut]);
 
   const cardColor =
     swipeColor === 'right'

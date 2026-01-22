@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
+import {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -13,7 +13,6 @@ import SwipeableGrantCard, { Grant } from './SwipeableGrantCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 100;
-const ROTATION_MULTIPLIER = 0.1;
 
 interface GrantCardStackProps {
   grants: Grant[];
@@ -57,7 +56,7 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
     thirdCardScale.value = withSpring(hasThird ? 0.9 : 1, { damping: 15, stiffness: 100 });
     thirdCardOffsetY.value = withSpring(hasThird ? 20 : 0, { damping: 15, stiffness: 100 });
     thirdCardOpacity.value = withTiming(hasThird ? 0.5 : 1, { duration: 200 });
-  }, [currentIndex, grants.length]);
+  }, [currentIndex, grants.length, secondCardScale, secondCardOffsetY, secondCardOpacity, thirdCardScale, thirdCardOffsetY, thirdCardOpacity]);
 
   const removeCard = (direction: 'left' | 'right') => {
     const currentGrant = grants[currentIndex];
