@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   useSharedValue,
@@ -186,9 +186,9 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
 
   if (currentIndex >= grants.length) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <View className="p-6 rounded-card bg-background-card">
-          <Text className="text-text-primary text-lg text-center">
+      <View style={styles.container}>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>
             No more grants available
           </Text>
         </View>
@@ -197,7 +197,7 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
   }
 
   return (
-    <View className="flex-1 items-center justify-center">
+    <View style={styles.container}>
       {/* Third card (behind) */}
       {thirdIndex < grants.length && (
         <SwipeableGrantCard
@@ -228,3 +228,21 @@ export default function GrantCardStack({ grants, onSwipeLeft, onSwipeRight }: Gr
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyCard: {
+    padding: 24,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+  },
+  emptyText: {
+    color: '#ffffff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+});
