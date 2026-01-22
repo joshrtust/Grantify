@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create Firebase config from template
+        run: cp FirebaseConfig.template.ts FirebaseConfig.ts
+
       - name: Lint
         run: npm run lint
 

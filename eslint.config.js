@@ -6,12 +6,9 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ['dist/*'],
-    settings: {
-      'import/resolver': {
-        typescript: {
-          project: './tsconfig.json',
-        },
-      },
+    rules: {
+      // TypeScript handles path resolution for @/ imports via tsconfig paths
+      'import/no-unresolved': ['error', { ignore: ['^@/'] }],
     },
   },
 ]);
