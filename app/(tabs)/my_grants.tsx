@@ -153,7 +153,7 @@ export default function MyGrants() {
         <View style={styles.emptyContainer}>
           <IconSymbol name="doc.text" size={64} color="#6366f1" />
           <Text style={styles.emptyTitle}>No Grants Yet</Text>
-          <Text style={styles.emptyText}>Start swiping to save grants you're interested in!</Text>
+          <Text style={styles.emptyText}>Start swiping to save grants you&apos;re interested in!</Text>
         </View>
       </SafeAreaView>
     );
