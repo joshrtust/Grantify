@@ -1,6 +1,6 @@
 import React from 'react';
-import { ImageBackground, Text, View, ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, AnimatedStyle } from 'react-native-reanimated';
+import { ImageBackground, Text, View, ViewStyle, StyleSheet } from 'react-native';
+import Animated, { AnimatedStyle } from 'react-native-reanimated';
 
 export interface Grant {
   id: string;
@@ -44,35 +44,27 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
         <ImageBackground
           source={{ uri: grant.backgroundImage }}
           resizeMode="cover"
-          style={{
-            width: '100%',
-            height: '100%',
-            opacity: 0.3,
-          }}
-          className="absolute inset-0"
+          style={styles.backgroundImage}
         />
       )}
       {!grant.backgroundImage && (
-        <View
-          className="absolute inset-0 bg-primary-purple"
-          style={{ opacity: 0.1 }}
-        />
+        <View style={styles.backgroundFallback} />
       )}
-      <View className="flex-1 p-6 justify-between">
+      <View style={styles.content}>
         <View>
-          <Text className="text-text-secondary text-base font-medium mb-4">
+          <Text style={styles.university}>
             {grant.university}
           </Text>
-          <Text className="text-text-primary text-3xl font-bold mb-6 leading-tight">
+          <Text style={styles.question}>
             {grant.question}
           </Text>
         </View>
-        <View className="mt-auto">
-          <Text className="text-text-secondary text-sm mb-1">Grant price:</Text>
-          <Text className="text-text-primary text-xl font-semibold mb-4">
+        <View style={styles.footer}>
+          <Text style={styles.label}>Grant price:</Text>
+          <Text style={styles.priceRange}>
             {grant.priceRange}
           </Text>
-          <Text className="text-text-secondary text-xs text-center">
+          <Text style={styles.validUntil}>
             valid until {grant.validUntil}
           </Text>
         </View>
@@ -96,8 +88,8 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
             },
           ]}
         >
-          <Text className="text-white text-4xl font-bold">✕</Text>
-          <Text className="text-white text-xl font-semibold mt-2">DISCARD</Text>
+          <Text style={styles.overlayIcon}>✕</Text>
+          <Text style={styles.overlayText}>DISCARD</Text>
         </Animated.View>
       )}
 
@@ -119,10 +111,80 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
             },
           ]}
         >
-          <Text className="text-white text-4xl font-bold">✓</Text>
-          <Text className="text-white text-xl font-semibold mt-2">ACCEPT</Text>
+          <Text style={styles.overlayIcon}>✓</Text>
+          <Text style={styles.overlayText}>ACCEPT</Text>
         </Animated.View>
       )}
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.3,
+  },
+  backgroundFallback: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#6366f1',
+    opacity: 0.1,
+  },
+  content: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'space-between',
+  },
+  university: {
+    color: '#9ca3af',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  question: {
+    color: '#ffffff',
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    lineHeight: 36,
+  },
+  footer: {
+    marginTop: 'auto',
+  },
+  label: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  priceRange: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  validUntil: {
+    color: '#9ca3af',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  overlayIcon: {
+    color: '#ffffff',
+    fontSize: 36,
+    fontWeight: 'bold',
+  },
+  overlayText: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+});
