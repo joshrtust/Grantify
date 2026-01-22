@@ -1,6 +1,6 @@
 import React from 'react';
-import { ImageBackground, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { ImageBackground, Text, View, ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, AnimatedStyle } from 'react-native-reanimated';
 
 export interface Grant {
   id: string;
@@ -14,25 +14,31 @@ export interface Grant {
 
 interface SwipeableGrantCardProps {
   grant: Grant;
-  animatedStyle?: ReturnType<typeof useAnimatedStyle>;
-  leftOverlayStyle?: ReturnType<typeof useAnimatedStyle>;
-  rightOverlayStyle?: ReturnType<typeof useAnimatedStyle>;
+  animatedStyle?: AnimatedStyle<ViewStyle>;
+  leftOverlayStyle?: AnimatedStyle<ViewStyle>;
+  rightOverlayStyle?: AnimatedStyle<ViewStyle>;
 }
 
 export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlayStyle, rightOverlayStyle }: SwipeableGrantCardProps) {
   return (
     <Animated.View
       style={[
-        // @ts-expect-error - Reanimated style types have cursor incompatibility with RN web types
         animatedStyle,
         {
+          position: 'absolute',
           width: '88%',
           height: '65%',
           maxWidth: 380,
           maxHeight: 650,
+          borderRadius: 20,
+          backgroundColor: '#1a1a1a',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          overflow: 'hidden',
         },
       ]}
-      className="absolute rounded-card bg-background-card shadow-lg overflow-hidden"
     >
       {grant.backgroundImage && (
         <ImageBackground
@@ -76,7 +82,6 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
       {leftOverlayStyle && (
         <Animated.View
           style={[
-            // @ts-expect-error - Reanimated style types have cursor incompatibility with RN web types
             leftOverlayStyle,
             {
               position: 'absolute',
@@ -100,7 +105,6 @@ export default function SwipeableGrantCard({ grant, animatedStyle, leftOverlaySt
       {rightOverlayStyle && (
         <Animated.View
           style={[
-            // @ts-expect-error - Reanimated style types have cursor incompatibility with RN web types
             rightOverlayStyle,
             {
               position: 'absolute',
