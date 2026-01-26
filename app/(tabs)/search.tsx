@@ -66,10 +66,13 @@ export default function Search() {
     return unsubscribe;
   }, []);
 
-  // Fetch grants from Firestore
+  // Fetch grants from Firestore, excluding those already swiped right on
   useEffect(() => {
     const fetchGrants = async () => {
       try {
+        const user = auth.currentUser;
+        
+        // Fetch all grants
         const grantsSnapshot = await getDocs(collection(db, 'grants'));
         const fetchedGrants: Grant[] = grantsSnapshot.docs.map(doc => {
           const data = doc.data();
@@ -83,8 +86,30 @@ export default function Search() {
             URL: data.URL || data.url || '',
           };
         });
-        console.log('Fetched grants:', fetchedGrants);
-        setGrants(fetchedGrants);
+        
+        // If user is logged in, fetch their applications and filter out already-swiped grants
+        if (user) {
+          const applicationsQuery = query(
+            collection(db, 'applications'),
+            where('UserID', '==', user.uid)
+          );
+          const applicationsSnapshot = await getDocs(applicationsQuery);
+          const swipedGrantIds = new Set(
+            applicationsSnapshot.docs.map(doc => doc.data().GrantID)
+          );
+          
+          console.log('User has swiped right on:', swipedGrantIds.size, 'grants');
+          
+          // Filter out grants that have already been swiped right on
+          const filteredGrants = fetchedGrants.filter(grant => !swipedGrantIds.has(grant.id));
+          console.log('Showing', filteredGrants.length, 'grants after filtering');
+          setGrants(filteredGrants);
+        } else {
+          // If no user, show all grants
+          console.log('No user authenticated, showing all grants');
+          setGrants(fetchedGrants);
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching grants:', error);
