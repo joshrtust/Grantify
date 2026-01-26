@@ -31,13 +31,20 @@ export default function MyGrants() {
       
       console.log('Applications found:', applicationsSnapshot.docs.length);
 
-      // Step 2: Get all GrantIDs from the applications
-      const grantIds = applicationsSnapshot.docs.map(doc => doc.data().GrantID).filter(id => id);
+      // Step 2: Create a map of GrantID to AppliedAt timestamp
+      const grantIdToTimestamp = new Map<string, string>();
+      applicationsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.GrantID) {
+          grantIdToTimestamp.set(data.GrantID, data.AppliedAt || '');
+        }
+      });
 
+      const grantIds = Array.from(grantIdToTimestamp.keys());
       console.log('Grant IDs to fetch:', grantIds);
 
       // Step 3: Fetch each grant from the grants collection
-      const fetchedGrants: Grant[] = [];
+      const fetchedGrants: Array<Grant & { appliedAt: string }> = [];
       for (const grantId of grantIds) {
         const grantDocRef = doc(db, 'grants', grantId);
         const grantDoc = await getDoc(grantDocRef);
@@ -59,11 +66,17 @@ export default function MyGrants() {
             priceRange: value,
             validUntil: 'N/A', // Not in your DB structure
             url: grantUrl,
+            appliedAt: grantIdToTimestamp.get(grantId) || '',
           });
         } else {
           console.log('Grant not found:', grantId);
         }
       }
+
+      // Sort by AppliedAt timestamp in descending order (most recent first)
+      fetchedGrants.sort((a, b) => {
+        return b.appliedAt.localeCompare(a.appliedAt);
+      });
 
       console.log('Total grants fetched:', fetchedGrants.length);
       setGrants(fetchedGrants);
